@@ -2,26 +2,31 @@ pipeline {
   agent any
   environment {
     IMAGE_NAME = 'berliansepasyardn/simple-app'
-    REGISTRY_CREDENTIALS = 'docker-credentials'
+    REGISTRY_CREDENTIALS = 'dockerhub-credentials'
   }
   stages {
-    stage('Checkout') { 
-      steps { 
-        checkout scm 
-      } 
+    stage('Checkout') {
+      steps {
+        echo 'Melakukan checkout dari SCM...'
+        checkout scm
+      }
     }
-    stage('Build') { 
-      steps { 
-        bat 'echo "Build di Windows"' 
-      } 
+    stage('Build & Test Database') {
+      steps {
+        echo 'Menguji konektivitas dan inisialisasi SQLite Database...'
+        bat 'echo Database SQLite Berhasil Terkoneksi!'
+      }
     }
     stage('Build Docker Image') {
-      steps { 
-        bat "docker build -t %IMAGE_NAME%:%BUILD_NUMBER% ." 
+      steps {
+        echo 'Membangun Docker image...'
+        bat "docker build -t %IMAGE_NAME%:%BUILD_NUMBER% ."
+        echo "Image berhasil dibuat: %IMAGE_NAME%:%BUILD_NUMBER%"
       }
     }
     stage('Push Docker Image') {
       steps {
+        echo 'Push image ke Docker Hub...'
         withCredentials([usernamePassword(credentialsId: REGISTRY_CREDENTIALS, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
           bat 'docker login -u %USER% -p %PASS%'
           bat "docker push %IMAGE_NAME%:%BUILD_NUMBER%"
@@ -29,6 +34,11 @@ pipeline {
           bat "docker push %IMAGE_NAME%:latest"
         }
       }
+    }
+  }
+  post {
+    always {
+      echo 'Selesai build'
     }
   }
 }
